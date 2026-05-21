@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Todo App</title>
+
+    <!-- Bootstrap -->
+
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.8/dist/quartz/bootstrap.css"
+            rel="stylesheet">
+
+    <style>
+
+        body {
+            padding-top: 40px;
+        }
+
+        .completed {
+            text-decoration: line-through;
+            color: gray;
+        }
+
+        .task-text {
+            font-size: 18px;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1 class="mb-4">Todo List</h1>
+
+    <!-- Добавление задачи -->
+
+    <div class="input-group mb-3">
+
+        <input
+                type="text"
+                id="taskTitle"
+                class="form-control"
+                placeholder="Новая задача">
+
+        <button
+                id="addButton"
+                class="btn btn-primary">
+
+            Добавить
+
+        </button>
+
+    </div>
+
+
+    <!-- Фильтры -->
+
+    <div class="mb-3">
+
+        <button id="allTasksButton"
+                class="btn btn-secondary">
+
+            Все
+
+        </button>
+
+        <button id="activeTasksButton"
+                class="btn btn-warning">
+
+            Активные
+
+        </button>
+
+        <button id="completedTasksButton"
+                class="btn btn-success">
+
+            Выполненные
+
+        </button>
+
+    </div>
+
+
+    <!-- Список задач -->
+
+    <ul id="taskList"
+        class="list-group">
+
+    </ul>
+
+</div>
+
+
+<script>
+
+    const API_URL = "/tasks";
+
+
+    // =========================
+    // Загрузка задач
+    // =========================
+
+    async function loadTasks() {
+
+        const response = await fetch(API_URL);
+
+        const tasks = await response.json();
+
+        renderTasks(tasks);
+
+    }
+
+
+    // =========================
+    // Отрисовка задач
+    // =========================
+
+    function renderTasks(tasks) {
+
+        const list = document.getElementById("taskList");
+
+        list.innerHTML = "";
+
+        tasks.forEach(task => {
+
+            const li = document.createElement("li");
+
+            li.className =
+                "list-group-item task-item";
+
+
+            // Текст задачи
+
+            const span = document.createElement("span");
+
+            span.textContent = task.title;
+
+            span.className = "task-text";
+
+            if (task.completed) {
+                span.classList.add("completed");
+            }
+
+
+            // Контейнер кнопок
+
+            const buttonGroup =
+                document.createElement("div");
+
+
+            // =========================
+            // Кнопка редактирования
+            // =========================
+
+            const editButton =
+                document.createElement("button");
+
+            editButton.textContent = "✏️";
+
+            editButton.className =
+                "btn btn-sm btn-outline-primary me-2";
+
+            editButton.addEventListener("click", () => {
+                editTask(task.id, task.title);
+            });
+
+
+            // =========================
+            // Кнопка выполнения
+            // =========================
+
+            const completeButton =
+                document.createElement("button");
+
+            completeButton.textContent = "✔";
+
+            completeButton.className =
+                "btn btn-sm btn-outline-success me-2";
+
+            completeButton.addEventListener("click", () => {
+                toggleTask(task.id);
+            });
+
+
+            // =========================
+            // Кнопка удаления
+            // =========================
+
+            const deleteButton =
+                document.createElement("button");
+
+            deleteButton.textContent = "❌";
+
+            deleteButton.className =
+                "btn btn-sm btn-outline-danger";
+
+            deleteButton.addEventListener("click", () => {
+                deleteTask(task.id);
+            });
+
+
+            // Добавление кнопок
+
+            buttonGroup.appendChild(editButton);
+
+            buttonGroup.appendChild(completeButton);
+
+            buttonGroup.appendChild(deleteButton);
+
+
+            // Добавление элементов
+
+            li.appendChild(span);
+
+            li.appendChild(buttonGroup);
+
+            list.appendChild(li);
+
+        });
+
+    }
+
+
+    // =========================
+    // Добавление задачи
+    // =========================
+
+    async function addTask() {
+
+        const input =
+            document.getElementById("taskTitle");
+
+        const title = input.value.trim();
+
+        if (!title) return;
+
+        await fetch(API_URL, {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                title: title,
+                completed: false
+            })
+
+        });
+
+        input.value = "";
+
+        loadTasks();
+
+    }
+
+
+    // =========================
+    // Удаление задачи
+    // =========================
+
+    async function deleteTask(id) {
+
+        await fetch(`${API_URL}/${id}`, {
+
+            method: "DELETE"
+
+        });
+
+        loadTasks();
+
+    }
+
+
+    // =========================
+    // Выполнение задачи
+    // =========================
+
+    async function toggleTask(id) {
+
+        const response =
+            await fetch(`${API_URL}/${id}`);
+
+        const task =
+            await response.json();
+
+        task.completed = !task.completed;
+
+        await fetch(`${API_URL}/${id}`, {
+
+            method: "PUT",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(task)
+
+        });
+
+        loadTasks();
+
+    }
+
+
+    // =========================
+    // Редактирование задачи
+    // =========================
+
+    async function editTask(id, oldTitle) {
+
+        const newTitle =
+            prompt("Изменить задачу:", oldTitle);
+
+        if (!newTitle) return;
+
+        const response =
+            await fetch(`${API_URL}/${id}`);
+
+        const task =
+            await response.json();
+
+        task.title = newTitle;
+
+        await fetch(`${API_URL}/${id}`, {
+
+            method: "PUT",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(task)
+
+        });
+
+        loadTasks();
+
+    }
+
+
+    // =========================
+    // Фильтрация задач
+    // =========================
+
+    async function filterTasks(completed) {
+
+        const response =
+            await fetch(
+                `${API_URL}?completed=${completed}`
+            );
+
+        const tasks =
+            await response.json();
+
+        renderTasks(tasks);
+
+    }
+
+
+    // =========================
+    // Обработчики кнопок
+    // =========================
+
+    document.getElementById("addButton")
+        .addEventListener("click", addTask);
+
+    document.getElementById("allTasksButton")
+        .addEventListener("click", loadTasks);
+
+    document.getElementById("activeTasksButton")
+        .addEventListener("click", () => {
+            filterTasks(false);
+        });
+
+    document.getElementById("completedTasksButton")
+        .addEventListener("click", () => {
+            filterTasks(true);
+        });
+
+
+    // =========================
+    // Старт приложения
+    // =========================
+
+    loadTasks();
+
+</script>
+
+</body>
+</html>
+
