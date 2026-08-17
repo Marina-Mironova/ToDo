@@ -3,6 +3,8 @@ package com.example.todo.model;
 //Описание сущности задачи
 
 import jakarta.persistence.*;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 
 // Аннотация JPA — говорит, что это таблица в базе
 @Entity
@@ -15,6 +17,9 @@ public class Task {
     private String title;
 
     private boolean completed;
+
+    @Enumerated(EnumType.STRING)
+    private TaskStatus status;
 
     // Конструктор без аргументов обязателен для JPA
     public Task() {}
@@ -33,6 +38,14 @@ public class Task {
 
     public boolean isCompleted() { return completed; }
     public void setCompleted(boolean completed) { this.completed = completed; }
+
+    public TaskStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(TaskStatus status) {
+        this.status = status;
+    }
 }
 
 

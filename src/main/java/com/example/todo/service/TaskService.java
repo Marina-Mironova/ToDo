@@ -1,6 +1,7 @@
 package com.example.todo.service;
 
 import com.example.todo.model.Task;
+import com.example.todo.model.TaskStatus;
 import com.example.todo.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,19 @@ import java.util.List;
         }
 
         public Task createTask(Task task) {
+
+            if (task.getStatus() == null) {
+
+                if (task.isCompleted()) {
+                    task.setStatus(TaskStatus.DONE);
+                } else {
+                    task.setStatus(TaskStatus.TODO);
+                }
+
+            }
+
+
+
             return taskRepository.save(task);
         }
 
@@ -42,9 +56,57 @@ import java.util.List;
 
                         task.setCompleted(updatedTask.isCompleted());
 
+                        // =========================
+                        // Защита от null
+                        // =========================
+
+                        if (updatedTask.getStatus() != null) {
+
+                            task.setStatus(updatedTask.getStatus());
+
+                        } else {
+
+                            // старый frontend
+
+                            if (task.isCompleted()) {
+                                task.setStatus(TaskStatus.DONE);
+                            } else {
+                                task.setStatus(TaskStatus.TODO);
+                            }
+
+                        }
+
+
+
+
                         return taskRepository.save(task);
                     })
                     .orElseThrow(() -> new RuntimeException("Task not found"));
         }
+
+        public Task getTaskById(Long id) {
+
+            return taskRepository.findById(id)
+                    .orElseThrow(() ->
+                            new RuntimeException("Task not found"));
+
+        }
+
+        private void updateStatus(Task task) {
+
+            // =========================
+            // Синхронизация status
+            // =========================
+
+            if (task.isCompleted()) {
+                task.setStatus(TaskStatus.DONE);
+            } else {
+                task.setStatus(TaskStatus.TODO);
+            }
+
+
+        }
+
+
     }
 
