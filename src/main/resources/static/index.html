@@ -472,6 +472,46 @@
 
     loadTasks();
 
+
+    function renderKanban(tasks) {
+
+    const columns = document.querySelectorAll(".kanban-column");
+
+    // Очищаем колонки
+    columns.forEach(column => {
+        column.querySelector(".kanban-tasks").innerHTML = "";
+    });
+
+    tasks.forEach(task => {
+
+        // Если у старой задачи status ещё отсутствует
+        let status = task.status;
+
+        if (!status) {
+            status = task.completed ? "DONE" : "TODO";
+        }
+
+        const column = document.querySelector(
+            `.kanban-column[data-status="${status}"]`
+        );
+
+        // Если статус неизвестный — пропускаем задачу
+        if (!column) {
+            return;
+        }
+
+        const card = document.createElement("div");
+
+        card.className = "kanban-card";
+
+        card.textContent = task.title;
+
+        column
+            .querySelector(".kanban-tasks")
+            .appendChild(card);
+    });
+}
+
 </script>
 
 </body>
