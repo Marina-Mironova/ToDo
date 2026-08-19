@@ -38,31 +38,38 @@
             margin-top: 20px;
         }
 
-        .kanban-column {
-            flex: 1;
-            min-height: 400px;
-            padding: 15px;
-            border-radius: 10px;
-            background-color: #f5f5f5;
-        }
+    .kanban-column[data-status="TODO"] {
+    background-color: #dbeafe;
+    }
 
-        .kanban-column h3 {
-            text-align: center;
-            margin-bottom: 15px;
-        }
+    .kanban-column[data-status="IN_PROGRESS"] {
+        background-color: #fef3c7;
+    }
 
-        .kanban-tasks {
-            min-height: 300px;
-        }
+    .kanban-column[data-status="DONE"] {
+        background-color: #dcfce7;
+    }
 
-        .kanban-card {
-            padding: 12px;
-            margin-bottom: 10px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
+.kanban-column h3 {
+    text-align: center;
+    margin-bottom: 15px;
 
+    color: #212529;
+    font-weight: 600;
+}
+
+.kanban-card {
+    background-color: #ffffff;
+    color: #212529;
+
+    padding: 12px;
+    margin-bottom: 10px;
+
+    border-radius: 8px;
+    border: 1px solid #adb5bd;
+
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
     </style>
 
 </head>
@@ -134,7 +141,7 @@
 <div id="kanbanBoard" class="kanban-board">
 
     <div class="kanban-column" data-status="TODO">
-        <h3>Активные</h3>
+        <h3>Запланированные</h3>
         <div class="kanban-tasks"></div>
     </div>
 
@@ -476,41 +483,129 @@
 
     function renderKanban(tasks) {
 
-    const columns = document.querySelectorAll(".kanban-column");
+    const columns =
+        document.querySelectorAll(".kanban-column");
 
     // Очищаем колонки
     columns.forEach(column => {
+
         column.querySelector(".kanban-tasks").innerHTML = "";
+
     });
 
+
+    // Создаём карточки
     tasks.forEach(task => {
 
-        // Если у старой задачи status ещё отсутствует
         let status = task.status;
 
+        // Совместимость со старыми задачами
         if (!status) {
             status = task.completed ? "DONE" : "TODO";
         }
 
-        const column = document.querySelector(
-            `.kanban-column[data-status="${status}"]`
-        );
 
-        // Если статус неизвестный — пропускаем задачу
+        const column =
+            document.querySelector(
+                `.kanban-column[data-status="${status}"]`
+            );
+
+
         if (!column) {
             return;
         }
 
-        const card = document.createElement("div");
+
+        const card =
+            document.createElement("div");
 
         card.className = "kanban-card";
 
         card.textContent = task.title;
 
+        // Разрешаем перетаскивание
+        card.draggable = true;
+
+        // Запоминаем ID задачи
+        card.dataset.taskId = task.id;
+
+
+        // Начало перетаскивания
+        card.addEventListener("dragstart", (event) => {
+
+            event.dataTransfer.setData(
+                "taskId",
+                task.id
+            );
+
+        });
+
+
         column
             .querySelector(".kanban-tasks")
             .appendChild(card);
+
     });
+
+
+    // Настраиваем drop для колонок
+    columns.forEach(column => {
+
+        column.addEventListener("dragover", (event) => {
+
+            event.preventDefault();
+
+        });
+
+
+        column.addEventListener("drop", async (event) => {
+
+            event.preventDefault();
+
+            const taskId =
+                event.dataTransfer.getData("taskId");
+
+            const newStatus =
+                column.dataset.status;
+
+            await updateTaskStatus(
+                taskId,
+                newStatus
+            );
+
+        });
+
+    });
+
+
+}
+
+    async function updateTaskStatus(id, newStatus) {
+
+    const response =
+        await fetch(`${API_URL}/${id}`);
+
+    const task =
+        await response.json();
+
+    task.status = newStatus;
+
+    // Сохраняем совместимость со старым полем completed
+    task.completed = newStatus === "DONE";
+
+    await fetch(`${API_URL}/${id}`, {
+
+        method: "PUT",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify(task)
+
+    });
+
+    loadTasks();
 }
 
 </script>
